@@ -197,3 +197,4 @@ When ready to add OAuth: only `deps.py:get_current_user()` changes. The API-key 
 8. **Access isolation**: Create two student accounts; confirm student B cannot GET/POST/DELETE on student A's courses (expect 403).
 9. **No internal routes**: Confirm `GET /api/v1/internal/...` returns 404.
 10. **Frontend**: Confirm professor pages 404, register page has no role toggle, student dashboard shows create/ingest buttons.
+testestest
