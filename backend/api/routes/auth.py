@@ -1,8 +1,10 @@
+import secrets
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from api.deps import get_current_user
 from core.security import (
     create_access_token,
     create_refresh_token,
@@ -13,6 +15,7 @@ from core.security import (
 from models import User, get_db
 from schemas.auth import (
     AccessTokenOut,
+    ApiKeyOut,
     LoginRequest,
     RefreshRequest,
     RegisterRequest,
@@ -21,6 +24,7 @@ from schemas.auth import (
 )
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
+users_router = APIRouter(prefix="/api/v1/users", tags=["users"])
 
 
 @router.post("/register", response_model=TokenPair, status_code=status.HTTP_201_CREATED)
@@ -33,15 +37,14 @@ def register(payload: RegisterRequest, db: Annotated[Session, Depends(get_db)]) 
         email=payload.email,
         hashed_password=hash_password(payload.password),
         name=payload.name,
-        role=payload.role,
     )
     db.add(user)
     db.commit()
     db.refresh(user)
 
     return TokenPair(
-        access_token=create_access_token(str(user.id), user.role.value),
-        refresh_token=create_refresh_token(str(user.id), user.role.value),
+        access_token=create_access_token(str(user.id)),
+        refresh_token=create_refresh_token(str(user.id)),
         user=UserOut.model_validate(user),
     )
 
@@ -53,8 +56,8 @@ def login(payload: LoginRequest, db: Annotated[Session, Depends(get_db)]) -> Tok
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
     return TokenPair(
-        access_token=create_access_token(str(user.id), user.role.value),
-        refresh_token=create_refresh_token(str(user.id), user.role.value),
+        access_token=create_access_token(str(user.id)),
+        refresh_token=create_refresh_token(str(user.id)),
         user=UserOut.model_validate(user),
     )
 
@@ -70,8 +73,24 @@ def refresh(payload: RefreshRequest) -> AccessTokenOut:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Wrong token type")
 
     user_id = token_payload.get("sub")
-    role = token_payload.get("role")
-    if not user_id or not role:
+    if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh payload")
 
-    return AccessTokenOut(access_token=create_access_token(user_id, role))
+    return AccessTokenOut(access_token=create_access_token(user_id))
+
+
+@users_router.get("/me", response_model=UserOut)
+def get_me(user: Annotated[User, Depends(get_current_user)]) -> UserOut:
+    return UserOut.model_validate(user)
+
+
+@users_router.post("/me/api-key", response_model=ApiKeyOut)
+def generate_api_key(
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ApiKeyOut:
+    """Generate or rotate the user's API key. The key is returned once, in plaintext."""
+    new_key = secrets.token_urlsafe(32)
+    user.api_key = new_key
+    db.commit()
+    return ApiKeyOut(api_key=new_key)

@@ -2,8 +2,8 @@
 Folder watcher tool for the MCP server.
 
 Maintains a per-process registry of watchdog Observers. When a new file
-appears in a watched directory, it is POSTed to the backend's internal
-upload endpoint.
+appears in a watched directory, it is POSTed to the backend's upload endpoint
+using the user's API key as a bearer token.
 """
 import os
 import threading
@@ -23,11 +23,11 @@ _lock = threading.Lock()
 
 
 class _IngestHandler(FileSystemEventHandler):
-    def __init__(self, course_id: str, extensions: set[str], backend_url: str, internal_key: str):
+    def __init__(self, course_id: str, extensions: set[str], backend_url: str, api_key: str):
         self.course_id = course_id
         self.extensions = {e.lower() for e in extensions}
         self.backend_url = backend_url
-        self.internal_key = internal_key
+        self.api_key = api_key
 
     def on_created(self, event: FileSystemEvent) -> None:
         if event.is_directory:
@@ -39,9 +39,9 @@ class _IngestHandler(FileSystemEventHandler):
             with open(path, "rb") as f:
                 files = {"files": (path.name, f, "application/octet-stream")}
                 r = httpx.post(
-                    f"{self.backend_url}/api/v1/internal/ingest/{self.course_id}/upload",
+                    f"{self.backend_url}/api/v1/ingest/{self.course_id}/upload",
                     files=files,
-                    headers={"X-Internal-Key": self.internal_key},
+                    headers={"Authorization": f"Bearer {self.api_key}"},
                     timeout=120.0,
                 )
             logger.info(
@@ -59,7 +59,7 @@ def start_watcher(
     course_id: str,
     file_extensions: list[str],
     backend_url: str,
-    internal_key: str,
+    api_key: str,
 ) -> dict[str, Any]:
     p = Path(path)
     p.mkdir(parents=True, exist_ok=True)
@@ -69,7 +69,7 @@ def start_watcher(
         if key in _observers:
             return {"status": "already_watching", "key": key, "path": str(p.resolve())}
 
-        handler = _IngestHandler(course_id, set(file_extensions), backend_url, internal_key)
+        handler = _IngestHandler(course_id, set(file_extensions), backend_url, api_key)
         observer = Observer()
         observer.schedule(handler, str(p), recursive=False)
         observer.daemon = True

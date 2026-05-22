@@ -6,7 +6,6 @@ from api.routes import auth as auth_routes
 from api.routes import chat as chat_routes
 from api.routes import courses as course_routes
 from api.routes import ingestion as ingestion_routes
-from api.routes import internal as internal_routes
 from api.routes import webhooks as webhook_routes
 from config import get_settings
 
@@ -33,11 +32,11 @@ app.add_middleware(
 )
 
 app.include_router(auth_routes.router)
+app.include_router(auth_routes.users_router)
 app.include_router(course_routes.router)
 app.include_router(ingestion_routes.router)
 app.include_router(chat_routes.router)
 app.include_router(webhook_routes.router)
-app.include_router(internal_routes.router)
 
 
 @app.get("/health")

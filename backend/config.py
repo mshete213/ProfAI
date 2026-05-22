@@ -32,11 +32,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 60
     refresh_token_expire_days: int = 7
 
-    # Internal MCP <-> backend auth
-    internal_mcp_api_key: str = "change-me-internal-mcp-key"
-
     # URLs
-    backend_internal_url: str = "http://backend:8000"
     backend_public_url: str = "http://localhost:8000"
     frontend_public_url: str = "http://localhost:3000"
 

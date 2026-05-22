@@ -1,5 +1,6 @@
 import { clearSession, getAccessToken } from "./auth";
 import type {
+  ApiKey,
   CanvasIngestResponse,
   ChatMessage,
   ChatResponse,
@@ -7,7 +8,6 @@ import type {
   DocumentMeta,
   IngestionJob,
   TokenPair,
-  UserRole,
 } from "./types";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
@@ -59,10 +59,13 @@ async function request<T>(
 
 export const api = {
   // Auth
-  register: (data: { email: string; password: string; name: string; role: UserRole }) =>
+  register: (data: { email: string; password: string; name: string }) =>
     request<TokenPair>("/api/v1/auth/register", { method: "POST", body: JSON.stringify(data), auth: false }),
   login: (data: { email: string; password: string }) =>
     request<TokenPair>("/api/v1/auth/login", { method: "POST", body: JSON.stringify(data), auth: false }),
+
+  // API key
+  generateApiKey: () => request<ApiKey>("/api/v1/users/me/api-key", { method: "POST" }),
 
   // Courses
   listCourses: () => request<Course[]>("/api/v1/courses"),
@@ -72,7 +75,6 @@ export const api = {
   updateCourse: (id: string, data: Partial<{ name: string; description: string; style_instructions: string }>) =>
     request<Course>(`/api/v1/courses/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   deleteCourse: (id: string) => request<void>(`/api/v1/courses/${id}`, { method: "DELETE" }),
-  enrollInCourse: (id: string) => request<void>(`/api/v1/courses/${id}/enroll`, { method: "POST" }),
 
   // Ingestion
   uploadFiles: (courseId: string, files: File[]) => {

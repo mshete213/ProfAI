@@ -3,21 +3,15 @@ import Navbar from "./components/shared/Navbar";
 import ProtectedRoute from "./components/shared/ProtectedRoute";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Dashboard from "./pages/professor/Dashboard";
-import CourseIngest from "./pages/professor/CourseIngest";
-import CourseStyle from "./pages/professor/CourseStyle";
-import StudentCourses from "./pages/student/Courses";
+import Courses from "./pages/student/Courses";
+import CourseCreate from "./pages/student/CourseCreate";
+import CourseIngest from "./pages/student/CourseIngest";
 import Chat from "./pages/student/Chat";
-import { getCurrentUser } from "./lib/auth";
+import ApiKeySettings from "./pages/settings/ApiKeySettings";
+import { isAuthenticated } from "./lib/auth";
 
 function HomeRedirect() {
-  const user = getCurrentUser();
-  if (!user) return <Navigate to="/login" replace />;
-  return user.role === "professor" ? (
-    <Navigate to="/professor/dashboard" replace />
-  ) : (
-    <Navigate to="/student/courses" replace />
-  );
+  return isAuthenticated() ? <Navigate to="/courses" replace /> : <Navigate to="/login" replace />;
 }
 
 export default function App() {
@@ -31,43 +25,43 @@ export default function App() {
           <Route path="/register" element={<Register />} />
 
           <Route
-            path="/professor/dashboard"
+            path="/courses"
             element={
-              <ProtectedRoute role="professor">
-                <Dashboard />
+              <ProtectedRoute>
+                <Courses />
               </ProtectedRoute>
             }
           />
           <Route
-            path="/professor/courses/:courseId/ingest"
+            path="/courses/new"
             element={
-              <ProtectedRoute role="professor">
+              <ProtectedRoute>
+                <CourseCreate />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/courses/:courseId/ingest"
+            element={
+              <ProtectedRoute>
                 <CourseIngest />
               </ProtectedRoute>
             }
           />
           <Route
-            path="/professor/courses/:courseId/style"
+            path="/courses/:courseId/chat"
             element={
-              <ProtectedRoute role="professor">
-                <CourseStyle />
+              <ProtectedRoute>
+                <Chat />
               </ProtectedRoute>
             }
           />
 
           <Route
-            path="/student/courses"
+            path="/settings/api-key"
             element={
-              <ProtectedRoute role="student">
-                <StudentCourses />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/student/courses/:courseId/chat"
-            element={
-              <ProtectedRoute role="student">
-                <Chat />
+              <ProtectedRoute>
+                <ApiKeySettings />
               </ProtectedRoute>
             }
           />

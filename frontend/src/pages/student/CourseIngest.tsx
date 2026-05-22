@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import useSWR from "swr";
 import { ArrowLeft } from "lucide-react";
-import IngestForm from "../../components/professor/IngestForm";
-import MaterialsList from "../../components/professor/MaterialsList";
+import IngestForm from "../../components/ingest/IngestForm";
+import MaterialsList from "../../components/ingest/MaterialsList";
 import { api } from "../../lib/api";
 import type { IngestionJob } from "../../lib/types";
 
@@ -16,12 +16,12 @@ export default function CourseIngest() {
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-8">
-      <Link to="/professor/dashboard" className="mb-4 inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900">
+      <Link to="/courses" className="mb-4 inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900">
         <ArrowLeft size={14} />
-        Back to dashboard
+        Back to courses
       </Link>
       <h1 className="mb-1 text-2xl font-semibold">{course?.name ?? "Loading…"}</h1>
-      <p className="mb-6 text-sm text-gray-600">Ingest materials into this course</p>
+      <p className="mb-6 text-sm text-gray-600">Add materials to this course</p>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="space-y-4">

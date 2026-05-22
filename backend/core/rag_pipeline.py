@@ -28,13 +28,13 @@ def _get_anthropic() -> Anthropic:
 
 
 def _get_or_create_session(
-    db: Session, course_id: uuid.UUID, student_id: uuid.UUID, session_id: uuid.UUID | None
+    db: Session, course_id: uuid.UUID, user_id: uuid.UUID, session_id: uuid.UUID | None
 ) -> ChatSession:
     if session_id is not None:
         existing = db.query(ChatSession).filter(ChatSession.id == session_id).first()
-        if existing and existing.course_id == course_id and existing.student_id == student_id:
+        if existing and existing.course_id == course_id and existing.student_id == user_id:
             return existing
-    session = ChatSession(course_id=course_id, student_id=student_id)
+    session = ChatSession(course_id=course_id, student_id=user_id)
     db.add(session)
     db.flush()
     return session
@@ -60,12 +60,12 @@ def _retrieve_context(course_id: uuid.UUID, question: str) -> list[dict[str, Any
 def query(
     db: Session,
     course: Course,
-    student_id: uuid.UUID,
+    user_id: uuid.UUID,
     question: str,
     session_id: uuid.UUID | None,
 ) -> dict[str, Any]:
     """Single-shot (non-streaming) RAG query."""
-    session = _get_or_create_session(db, course.id, student_id, session_id)
+    session = _get_or_create_session(db, course.id, user_id, session_id)
     history = _load_history(db, session)
     chunks = _retrieve_context(course.id, question)
 
@@ -122,7 +122,7 @@ def query(
 async def stream_query(
     db: Session,
     course: Course,
-    student_id: uuid.UUID,
+    user_id: uuid.UUID,
     question: str,
     session_id: uuid.UUID | None,
 ) -> AsyncIterator[dict[str, Any]]:
@@ -131,7 +131,7 @@ async def stream_query(
     Yields events: {"event": "session", "data": {...}}, {"event": "chunk", "data": "..."},
     {"event": "sources", "data": [...]}, {"event": "done", "data": {...}}.
     """
-    session = _get_or_create_session(db, course.id, student_id, session_id)
+    session = _get_or_create_session(db, course.id, user_id, session_id)
     history = _load_history(db, session)
     chunks = _retrieve_context(course.id, question)
     sources = [c.get("metadata", {}) for c in chunks]

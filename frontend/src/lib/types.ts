@@ -1,10 +1,8 @@
-export type UserRole = "professor" | "student";
-
 export interface User {
   id: string;
   email: string;
   name: string;
-  role: UserRole;
+  api_key?: string | null;
 }
 
 export interface TokenPair {
@@ -13,16 +11,19 @@ export interface TokenPair {
   user: User;
 }
 
+export interface ApiKey {
+  api_key: string;
+}
+
 export interface Course {
   id: string;
   name: string;
   description: string | null;
   style_instructions: string | null;
-  professor_id: string;
+  owner_id: string;
   created_at: string;
   updated_at: string;
   document_count?: number;
-  enrollment_count?: number;
 }
 
 export type SourceType = "pdf" | "pptx" | "docx" | "youtube" | "drive" | "canvas";

@@ -1,6 +1,4 @@
 import asyncio
-import os
-import uuid
 from pathlib import Path
 from typing import Annotated
 from uuid import UUID
@@ -8,7 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
-from api.deps import get_current_user, require_professor
+from api.deps import get_current_user
 from config import get_settings
 from core.encryption import encrypt
 from core.pinecone_client import delete_by_doc_id
@@ -49,7 +47,7 @@ def _verify_course_owned(db: Session, course_id: UUID, user: User) -> Course:
     course = db.query(Course).filter(Course.id == course_id).first()
     if not course:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
-    if course.professor_id != user.id:
+    if course.owner_id != user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your course")
     return course
 
@@ -61,10 +59,10 @@ _ALLOWED_EXTENSIONS = {".pdf", ".pptx", ".docx"}
 async def upload_files(
     course_id: UUID,
     files: Annotated[list[UploadFile], File(...)],
-    professor: Annotated[User, Depends(require_professor)],
+    user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> JobCreatedOut:
-    _verify_course_owned(db, course_id, professor)
+    _verify_course_owned(db, course_id, user)
 
     if not files:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No files uploaded")
@@ -79,7 +77,7 @@ async def upload_files(
 
     job = IngestionJob(
         course_id=course_id,
-        source_type=SourceType.PDF,  # placeholder; first file's type
+        source_type=SourceType.PDF,
         status=JobStatus.QUEUED,
         total_items=len(files),
     )
@@ -110,7 +108,7 @@ def get_job(
     if not job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
     course = db.query(Course).filter(Course.id == job.course_id).first()
-    if course is None or course.professor_id != user.id:
+    if course is None or course.owner_id != user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your job")
     return JobOut.model_validate(job)
 
@@ -118,10 +116,10 @@ def get_job(
 @router.get("/{course_id}/materials", response_model=list[DocumentOut])
 def list_materials(
     course_id: UUID,
-    professor: Annotated[User, Depends(require_professor)],
+    user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> list[DocumentOut]:
-    _verify_course_owned(db, course_id, professor)
+    _verify_course_owned(db, course_id, user)
     docs = (
         db.query(Document)
         .filter(Document.course_id == course_id)
@@ -135,10 +133,10 @@ def list_materials(
 def delete_material(
     course_id: UUID,
     doc_id: UUID,
-    professor: Annotated[User, Depends(require_professor)],
+    user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> None:
-    _verify_course_owned(db, course_id, professor)
+    _verify_course_owned(db, course_id, user)
     doc = db.query(Document).filter(Document.id == doc_id, Document.course_id == course_id).first()
     if not doc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
@@ -156,10 +154,10 @@ def delete_material(
 def ingest_youtube(
     course_id: UUID,
     payload: YouTubeIngestRequest,
-    professor: Annotated[User, Depends(require_professor)],
+    user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> JobCreatedOut:
-    _verify_course_owned(db, course_id, professor)
+    _verify_course_owned(db, course_id, user)
     job = IngestionJob(
         course_id=course_id,
         source_type=SourceType.YOUTUBE,
@@ -178,10 +176,10 @@ def ingest_youtube(
 def ingest_drive(
     course_id: UUID,
     payload: DriveIngestRequest,
-    professor: Annotated[User, Depends(require_professor)],
+    user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> JobCreatedOut:
-    _verify_course_owned(db, course_id, professor)
+    _verify_course_owned(db, course_id, user)
     job = IngestionJob(
         course_id=course_id,
         source_type=SourceType.DRIVE,
@@ -201,10 +199,10 @@ def ingest_drive(
 def ingest_canvas(
     course_id: UUID,
     payload: CanvasIngestRequest,
-    professor: Annotated[User, Depends(require_professor)],
+    user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> CanvasIngestResponse:
-    _verify_course_owned(db, course_id, professor)
+    _verify_course_owned(db, course_id, user)
 
     conn = db.query(CanvasConnection).filter(CanvasConnection.course_id == course_id).first()
     encrypted_token = encrypt(payload.canvas_token)
@@ -250,12 +248,12 @@ def ingest_canvas(
 @router.post("/{course_id}/canvas/enable-webhooks", status_code=status.HTTP_200_OK)
 def enable_canvas_webhooks(
     course_id: UUID,
-    professor: Annotated[User, Depends(require_professor)],
+    user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     from core.encryption import decrypt
 
-    _verify_course_owned(db, course_id, professor)
+    _verify_course_owned(db, course_id, user)
     conn = db.query(CanvasConnection).filter(CanvasConnection.course_id == course_id).first()
     if conn is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No Canvas connection")

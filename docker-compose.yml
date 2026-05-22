@@ -39,7 +39,6 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg2://edtech:edtech_dev@postgres:5432/edtech
       REDIS_URL: redis://redis:6379/0
-      BACKEND_INTERNAL_URL: http://backend:8000
     ports:
       - "8000:8000"
     depends_on:
@@ -84,7 +83,7 @@ services:
     env_file:
       - .env
     environment:
-      BACKEND_INTERNAL_URL: http://backend:8000
+      BACKEND_URL: http://backend:8000
     depends_on:
       - backend
     volumes:

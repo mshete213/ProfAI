@@ -6,12 +6,12 @@ from core.chunker import count_tokens
 settings = get_settings()
 
 STATIC_SYSTEM_PROMPT = (
-    "You are an AI teaching assistant for a university course. Your job is to help "
-    "students understand course material accurately. You ONLY answer questions using "
-    "the provided COURSE CONTEXT. If the answer is not in the context, respond with: "
-    "\"This isn't covered in the course materials I have access to.\" Never fabricate "
-    "facts. Always cite the source filename and page/slide/timestamp you drew from, "
-    "using inline references like [source: filename.pdf, p. 12]."
+    "You are a personal study assistant. Your job is to help the user understand "
+    "their own course material accurately. You ONLY answer questions using the "
+    "provided COURSE CONTEXT. If the answer is not in the context, respond with: "
+    "\"This isn't covered in your course materials.\" Never fabricate facts. Always "
+    "cite the source filename and page/slide/timestamp you drew from, using inline "
+    "references like [source: filename.pdf, p. 12]."
 )
 
 
@@ -19,9 +19,9 @@ def build_system_blocks(course_name: str, style_instructions: str) -> list[dict[
     """Two cache breakpoints: static block + per-course style block."""
     course_block_text = (
         f"COURSE: {course_name}\n\n"
-        f"PROFESSOR'S EXPECTED RESPONSE STYLE:\n{style_instructions or '(no specific style instructions provided)'}\n\n"
-        "When answering, strictly follow the above style and format guidance. "
-        "The professor has reviewed these materials and expects answers in this exact format."
+        f"USER'S PREFERRED RESPONSE STYLE:\n{style_instructions or '(no specific style instructions provided)'}\n\n"
+        "These are the user's own course materials. When answering, strictly follow "
+        "the above style and format guidance."
     )
     return [
         {
@@ -80,4 +80,4 @@ def trim_history_to_budget(history: list[dict[str, Any]], budget: int | None = N
 
 
 def build_user_message(question: str, chunks: list[dict[str, Any]]) -> str:
-    return f"COURSE CONTEXT (retrieved from course materials):\n\n{format_chunks_for_prompt(chunks)}\n\nSTUDENT QUESTION:\n{question}"
+    return f"COURSE CONTEXT (retrieved from your materials):\n\n{format_chunks_for_prompt(chunks)}\n\nQUESTION:\n{question}"

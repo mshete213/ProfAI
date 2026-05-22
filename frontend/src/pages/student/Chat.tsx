@@ -12,7 +12,7 @@ export default function Chat() {
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-6">
-      <Link to="/student/courses" className="mb-3 inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900">
+      <Link to="/courses" className="mb-3 inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900">
         <ArrowLeft size={14} />
         Back to courses
       </Link>

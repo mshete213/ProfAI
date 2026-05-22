@@ -21,7 +21,7 @@ class CourseOut(BaseModel):
     name: str
     description: str | None
     style_instructions: str | None
-    professor_id: UUID
+    owner_id: UUID
     created_at: datetime
     updated_at: datetime
 
@@ -31,4 +31,3 @@ class CourseOut(BaseModel):
 
 class CourseWithStats(CourseOut):
     document_count: int = 0
-    enrollment_count: int = 0

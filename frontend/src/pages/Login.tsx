@@ -17,7 +17,7 @@ export default function Login() {
     try {
       const tokens = await api.login({ email, password });
       saveSession(tokens);
-      navigate(tokens.user.role === "professor" ? "/professor/dashboard" : "/student/courses");
+      navigate("/courses");
     } catch (err: any) {
       setError(err.message || "Login failed");
     } finally {

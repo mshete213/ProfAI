@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from api.deps import get_current_user
 from core.rag_pipeline import query, stream_query
-from models import ChatSession, Course, CourseEnrollment, User, UserRole, get_db
+from models import ChatSession, Course, User, get_db
 from schemas.chat import ChatMessageOut, ChatRequest, ChatResponse
 
 router = APIRouter(prefix="/api/v1/chat", tags=["chat"])
@@ -18,19 +18,8 @@ def _ensure_chat_access(db: Session, course_id: UUID, user: User) -> Course:
     course = db.query(Course).filter(Course.id == course_id).first()
     if not course:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
-
-    if user.role == UserRole.PROFESSOR:
-        if course.professor_id != user.id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your course")
-        return course
-
-    enrolled = (
-        db.query(CourseEnrollment)
-        .filter(CourseEnrollment.course_id == course_id, CourseEnrollment.student_id == user.id)
-        .first()
-    )
-    if not enrolled:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enrolled in this course")
+    if course.owner_id != user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your course")
     return course
 
 
@@ -45,7 +34,7 @@ def chat(
     result = query(
         db=db,
         course=course,
-        student_id=user.id,
+        user_id=user.id,
         question=payload.question,
         session_id=payload.session_id,
     )
@@ -70,7 +59,7 @@ async def chat_stream(
         async for event in stream_query(
             db=db,
             course=course,
-            student_id=user.id,
+            user_id=user.id,
             question=payload.question,
             session_id=payload.session_id,
         ):

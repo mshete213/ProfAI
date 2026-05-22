@@ -2,14 +2,12 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { saveSession } from "../lib/auth";
-import type { UserRole } from "../lib/types";
 
 export default function Register() {
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<UserRole>("student");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -18,9 +16,9 @@ export default function Register() {
     setError(null);
     setLoading(true);
     try {
-      const tokens = await api.register({ name, email, password, role });
+      const tokens = await api.register({ name, email, password });
       saveSession(tokens);
-      navigate(role === "professor" ? "/professor/dashboard" : "/student/courses");
+      navigate("/courses");
     } catch (err: any) {
       setError(err.message || "Registration failed");
     } finally {
@@ -57,25 +55,6 @@ export default function Register() {
               onChange={(e) => setPassword(e.target.value)}
               className="input"
             />
-          </div>
-          <div>
-            <label className="label">Role</label>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setRole("student")}
-                className={`btn flex-1 ${role === "student" ? "bg-primary-600 text-white" : "border border-gray-300 bg-white"}`}
-              >
-                Student
-              </button>
-              <button
-                type="button"
-                onClick={() => setRole("professor")}
-                className={`btn flex-1 ${role === "professor" ? "bg-primary-600 text-white" : "border border-gray-300 bg-white"}`}
-              >
-                Professor
-              </button>
-            </div>
           </div>
           {error && <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</div>}
           <button type="submit" disabled={loading} className="btn-primary w-full">
