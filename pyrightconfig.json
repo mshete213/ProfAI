@@ -1,0 +1,14 @@
+{
+  "venvPath": ".",
+  "venv": ".venv",
+  "pythonVersion": "3.13",
+  "extraPaths": ["backend", "mcp_server"],
+  "include": ["backend", "mcp_server"],
+  "exclude": [
+    "**/__pycache__",
+    "**/node_modules",
+    ".venv",
+    "frontend"
+  ],
+  "reportMissingImports": "warning"
+}
