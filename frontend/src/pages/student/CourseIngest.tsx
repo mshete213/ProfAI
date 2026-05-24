@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import useSWR from "swr";
+import useSWR, { mutate } from "swr";
 import { ArrowLeft } from "lucide-react";
 import IngestForm from "../../components/ingest/IngestForm";
 import MaterialsList from "../../components/ingest/MaterialsList";
@@ -27,7 +27,7 @@ export default function CourseIngest() {
         <div className="space-y-4">
           <IngestForm courseId={courseId} onJobQueued={(id) => setActiveJobs((j) => [id, ...j])} />
           {activeJobs.map((id) => (
-            <JobStatusCard key={id} jobId={id} />
+            <JobStatusCard key={id} jobId={id} courseId={courseId} />
           ))}
         </div>
         <MaterialsList courseId={courseId} />
@@ -36,7 +36,7 @@ export default function CourseIngest() {
   );
 }
 
-function JobStatusCard({ jobId }: { jobId: string }) {
+function JobStatusCard({ jobId, courseId }: { jobId: string; courseId: string }) {
   const [job, setJob] = useState<IngestionJob | null>(null);
 
   useEffect(() => {
@@ -45,6 +45,7 @@ function JobStatusCard({ jobId }: { jobId: string }) {
       try {
         const j = await api.getJob(jobId);
         if (!cancelled) setJob(j);
+        if (!cancelled && j.status === "completed") mutate(`materials-${courseId}`);
         if (!cancelled && j.status !== "queued" && j.status !== "running") return;
         if (!cancelled) setTimeout(poll, 1500);
       } catch {
@@ -55,7 +56,7 @@ function JobStatusCard({ jobId }: { jobId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [jobId]);
+  }, [jobId, courseId]);
 
   if (!job) return null;
   const isDone = job.status === "completed" || job.status === "failed" || job.status === "skipped_duplicate";
