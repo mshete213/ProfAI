@@ -1,12 +1,12 @@
-# EdTech RAG Platform
+# ProfAI
 
-AI-powered edTech SaaS where professors upload course materials and students get tailored answers via RAG.
+AI-powered personal study platform where students build their own knowledge base from course materials and chat with an AI assistant grounded in their content.
 
 See `projectPlan.md` for the full architecture and design decisions.
 
-## Who installs what
+## What it does
 
-This is a **web SaaS**, so end users (professors and students) never install anything — they just visit the app in a browser. The setup steps below are for developers running the stack locally, and for ops deploying it to a server.
+Students create courses (subject areas), ingest materials from multiple sources, and chat with a RAG-powered assistant that answers questions using only their uploaded content. The same knowledge base is also accessible directly from Claude Desktop or any MCP-aware client via a per-user API key.
 
 ## Prereqs
 
@@ -59,45 +59,67 @@ The MCP server is optional for local dev: `make mcp-run`.
 ## Architecture at a glance
 
 ```
-[Student/Professor]
-       │
-       ▼
-  React + Vite ─── HTTPS ──► FastAPI ─┬─► Postgres   (users, courses, jobs, sessions)
-                                      ├─► Pinecone   (embedded course chunks)
-                                      ├─► Anthropic  (Claude with prompt caching)
-                                      ├─► OpenAI     (embeddings)
-                                      └─► Celery + Redis
-                                             │
-                                             ├─ PDF/PPTX/DOCX parsing
-                                             ├─ YouTube transcripts
-                                             ├─ Google Drive ingestion
-                                             └─ Canvas LMS sync (polling + webhook)
+[Student]
+    │
+    ▼
+React + Vite ─── HTTPS ──► FastAPI ─┬─► Postgres   (users, courses, jobs, sessions)
+                                    ├─► Pinecone   (embedded course chunks)
+                                    ├─► Anthropic  (Claude with prompt caching)
+                                    ├─► OpenAI     (embeddings)
+                                    └─► Celery + Redis
+                                           │
+                                           ├─ PDF/PPTX/DOCX parsing
+                                           ├─ YouTube transcripts
+                                           ├─ Google Drive ingestion
+                                           └─ Canvas LMS sync
 
-  MCP Server ──► FastAPI (X-Internal-Key auth)
-   ├─ ingest_google_drive
-   ├─ ingest_youtube
-   ├─ ingest_canvas (documentation; pro UI required)
-   ├─ watch_folder (auto-ingest from a directory)
-   └─ get_ingestion_status
+MCP Server ──► FastAPI (per-user API key auth)
+ ├─ query_course        (query your knowledge base from any MCP client)
+ ├─ list_my_courses     (list your courses)
+ ├─ ingest_google_drive
+ ├─ ingest_youtube
+ ├─ watch_folder        (auto-ingest from a local directory)
+ └─ get_ingestion_status
 ```
+
+## MCP setup (Claude Desktop)
+
+1. Register and log in to the web app
+2. Go to **Settings → API Key** and generate your key
+3. Add to your Claude Desktop MCP config:
+
+```json
+{
+  "mcpServers": {
+    "profai": {
+      "command": "python",
+      "args": ["-m", "mcp_server.server"],
+      "env": {
+        "BACKEND_URL": "http://localhost:8000",
+        "API_KEY": "<your-api-key>"
+      }
+    }
+  }
+}
+```
+
+You can then call `query_course`, `list_my_courses`, and ingestion tools directly from Claude.
 
 ## Verification path
 
-1. Register a professor account at http://localhost:3000/register
+1. Register an account at http://localhost:3000/register
 2. Create a course on the dashboard
-3. Upload a PDF in the course's Materials page; watch the job progress to "completed"
-4. Open the course's Style page and add response style instructions
-5. Register a student account, enroll in the course via its UUID
-6. Open the chat — ask a question that's answerable from the PDF. Verify:
+3. Upload a PDF via the course's Ingest page; watch the job progress to "completed"
+4. Open the chat — ask a question answerable from the PDF and verify:
    - Streaming response appears word-by-word
    - Source citations match the PDF
-   - Style matches the professor's instructions
+5. Go to Settings → API Key, generate a key, and call `query_course` from an MCP client
 
 ## Project structure
 
 ```
 backend/        FastAPI + Celery + Alembic
-mcp_server/     FastMCP autonomous ingestion server
+mcp_server/     FastMCP server (query + ingestion tools)
 frontend/       Vite + React + Tailwind
 docker-compose.yml
 projectPlan.md  Full architecture document
