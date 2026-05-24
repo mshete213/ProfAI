@@ -37,7 +37,7 @@ class ChatMessage(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     session_id = Column(UUID(as_uuid=True), ForeignKey("chat_sessions.id", ondelete="CASCADE"), nullable=False, index=True)
 
-    role = Column(Enum(MessageRole, name="message_role"), nullable=False)
+    role = Column(Enum(MessageRole, name="message_role", values_callable=lambda x: [e.value for e in x]), nullable=False)
     content = Column(Text, nullable=False)
     sources = Column(JSON, nullable=True)
     tokens_used = Column(JSON, nullable=True)

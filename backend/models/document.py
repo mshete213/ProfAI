@@ -33,7 +33,7 @@ class Document(Base):
 
     filename = Column(String(512), nullable=False)
     title = Column(String(512), nullable=True)
-    source_type = Column(Enum(SourceType, name="source_type"), nullable=False)
+    source_type = Column(Enum(SourceType, name="source_type", values_callable=lambda x: [e.value for e in x]), nullable=False)
     source_url = Column(Text, nullable=True)
 
     content_hash = Column(String(128), nullable=False, index=True)
@@ -51,8 +51,8 @@ class IngestionJob(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     course_id = Column(UUID(as_uuid=True), ForeignKey("courses.id", ondelete="CASCADE"), nullable=False, index=True)
 
-    source_type = Column(Enum(SourceType, name="source_type"), nullable=False)
-    status = Column(Enum(JobStatus, name="job_status"), default=JobStatus.QUEUED, nullable=False)
+    source_type = Column(Enum(SourceType, name="source_type", values_callable=lambda x: [e.value for e in x]), nullable=False)
+    status = Column(Enum(JobStatus, name="job_status", values_callable=lambda x: [e.value for e in x]), default=JobStatus.QUEUED, nullable=False)
 
     total_items = Column(Integer, default=0, nullable=False)
     processed_items = Column(Integer, default=0, nullable=False)

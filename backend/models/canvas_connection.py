@@ -29,7 +29,7 @@ class CanvasConnection(Base):
     canvas_token_encrypted = Column(Text, nullable=False)
     canvas_course_id = Column(Integer, nullable=False)
 
-    sync_mode = Column(Enum(CanvasSyncMode, name="canvas_sync_mode"), default=CanvasSyncMode.POLLING, nullable=False)
+    sync_mode = Column(Enum(CanvasSyncMode, name="canvas_sync_mode", values_callable=lambda x: [e.value for e in x]), default=CanvasSyncMode.POLLING, nullable=False)
     webhook_subscription_id = Column(String(255), nullable=True)
     webhook_compatible = Column(String(16), nullable=True)  # "true" | "false" | null=unchecked
 
