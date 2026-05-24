@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import useSWR, { mutate } from "swr";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, MessageSquare } from "lucide-react";
 import IngestForm from "../../components/ingest/IngestForm";
 import MaterialsList from "../../components/ingest/MaterialsList";
 import { api } from "../../lib/api";
@@ -16,10 +16,16 @@ export default function CourseIngest() {
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-8">
-      <Link to="/courses" className="mb-4 inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900">
-        <ArrowLeft size={14} />
-        Back to courses
-      </Link>
+      <div className="mb-4 flex items-center justify-between">
+        <Link to="/courses" className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900">
+          <ArrowLeft size={14} />
+          Back to courses
+        </Link>
+        <Link to={`/courses/${courseId}/chat`} className="inline-flex items-center gap-1.5 rounded-md bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700">
+          <MessageSquare size={14} />
+          Go to chat
+        </Link>
+      </div>
       <h1 className="mb-1 text-2xl font-semibold">{course?.name ?? "Loading…"}</h1>
       <p className="mb-6 text-sm text-gray-600">Add materials to this course</p>
 
