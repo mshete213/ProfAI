@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { width: 340px; padding: 16px; font-family: sans-serif; font-size: 14px; color: #111; }
+    h1 { font-size: 18px; font-weight: 700; color: #1d4ed8; margin-bottom: 16px; }
+    h2 { font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 8px; margin-top: 16px; }
+    label { display: block; margin-bottom: 10px; }
+    label span { display: block; font-size: 12px; color: #6b7280; margin-bottom: 4px; }
+    input {
+      width: 100%; padding: 7px 10px; border: 1px solid #d1d5db;
+      border-radius: 6px; font-size: 13px; outline: none;
+    }
+    input:focus { border-color: #1d4ed8; }
+    button.primary {
+      width: 100%; padding: 8px; background: #1d4ed8; color: #fff;
+      border: none; border-radius: 6px; font-size: 13px; cursor: pointer; margin-top: 4px;
+    }
+    button.primary:hover { background: #1e40af; }
+    #status { font-size: 12px; min-height: 18px; margin-top: 6px; color: #16a34a; }
+    #status.error { color: #dc2626; }
+    hr { border: none; border-top: 1px solid #e5e7eb; margin: 16px 0; }
+    #mapping-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+    .mapping-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 6px;
+      background: #f9fafb;
+    }
+    .mapping-info { font-size: 12px; }
+    .mapping-info .course { font-weight: 600; color: #111; }
+    .mapping-info .lms { color: #6b7280; margin-top: 1px; }
+    .remove-btn {
+      background: none; border: none; cursor: pointer; color: #9ca3af;
+      font-size: 16px; padding: 2px 4px; line-height: 1;
+    }
+    .remove-btn:hover { color: #dc2626; }
+    .empty { font-size: 12px; color: #9ca3af; }
+  </style>
+</head>
+<body>
+  <h1>ProfAI</h1>
+
+  <h2>Settings</h2>
+  <label>
+    <span>Backend URL</span>
+    <input id="input-backend" type="url" placeholder="http://localhost:8000" />
+  </label>
+  <label>
+    <span>API Key</span>
+    <input id="input-key" type="password" placeholder="Paste your ProfAI API key" />
+  </label>
+  <button class="primary" id="btn-save">Save settings</button>
+  <p id="status"></p>
+
+  <hr />
+
+  <h2>Course Mappings</h2>
+  <ul id="mapping-list"></ul>
+
+  <script src="popup.js"></script>
+</body>
+</html>

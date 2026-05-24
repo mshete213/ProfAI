@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "ProfAI",
+  "version": "1.0.0",
+  "description": "Automatically ingest LMS course materials into ProfAI.",
+
+  "permissions": ["storage"],
+
+  "host_permissions": [
+    "*://*.instructure.com/*",
+    "*://*.blackboard.com/*",
+    "*://*.brightspace.com/*",
+    "*://*.d2l.com/*",
+    "*://*.amazonaws.com/*",
+    "*://*.canvas-user-content.com/*"
+  ],
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.instructure.com/courses/*",
+        "*://*.blackboard.com/ultra/courses/*",
+        "*://*.brightspace.com/d2l/le/*",
+        "*://*.d2l.com/d2l/le/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "ProfAI"
+  }
+}
