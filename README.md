@@ -2,19 +2,17 @@
 
 AI-powered personal study platform where students build their own knowledge base from course materials and chat with an AI assistant grounded in their content.
 
-See `projectPlan.md` for the full architecture and design decisions.
-
 ## What it does
 
-Students create courses (subject areas), ingest materials from multiple sources, and chat with a RAG-powered assistant that answers questions using only their uploaded content. The same knowledge base is also accessible directly from Claude Desktop or any MCP-aware client via a per-user API key.
+Students create courses (subject areas), ingest materials from multiple sources, and chat with a RAG-powered assistant that answers questions using only their uploaded content. A Chrome extension lets students ingest files directly from Canvas (and other LMS platforms) with a single click. The same knowledge base is also accessible from Claude Desktop or any MCP-aware client via a per-user API key.
 
 ## Prereqs
 
 - Python 3.12+
 - Node 20+
-- Docker Desktop (for `make up` — the easiest path)
+- Redis + PostgreSQL running locally (via Homebrew or Docker)
 
-## One-command setup
+## Setup
 
 ```bash
 ./setup.sh        # or: make setup
@@ -34,19 +32,7 @@ After it finishes, **edit `.env`** and paste your real API keys:
 
 ## Run the full stack
 
-```bash
-make up           # docker compose up -d
-```
-
-Then open:
-- Frontend: http://localhost:3000
-- API docs: http://localhost:8000/docs
-
-Tail logs with `make logs`. Stop with `make down`.
-
-## Local dev (without Docker)
-
-Need Postgres + Redis running locally (or `docker compose up -d postgres redis`), then in three terminals:
+Three separate terminals from the project root:
 
 ```bash
 make backend-run     # FastAPI on :8000
@@ -54,33 +40,50 @@ make worker-run      # Celery worker + beat
 make frontend-run    # Vite on :3000
 ```
 
-The MCP server is optional for local dev: `make mcp-run`.
+Then open:
+- Frontend: http://localhost:3000
+- API docs: http://localhost:8000/docs
+
+The MCP server is optional: `make mcp-run`.
 
 ## Architecture at a glance
 
 ```
 [Student]
     │
-    ▼
-React + Vite ─── HTTPS ──► FastAPI ─┬─► Postgres   (users, courses, jobs, sessions)
-                                    ├─► Pinecone   (embedded course chunks)
-                                    ├─► Anthropic  (Claude with prompt caching)
-                                    ├─► OpenAI     (embeddings)
-                                    └─► Celery + Redis
-                                           │
-                                           ├─ PDF/PPTX/DOCX parsing
-                                           ├─ YouTube transcripts
-                                           ├─ Google Drive ingestion
-                                           └─ Canvas LMS sync
-
-MCP Server ──► FastAPI (per-user API key auth)
- ├─ query_course        (query your knowledge base from any MCP client)
- ├─ list_my_courses     (list your courses)
- ├─ ingest_google_drive
- ├─ ingest_youtube
- ├─ watch_folder        (auto-ingest from a local directory)
- └─ get_ingestion_status
+    ├── Browser (React + Vite) ──► FastAPI ─┬─► Postgres   (users, courses, jobs, sessions)
+    │                                       ├─► Pinecone   (embedded course chunks)
+    │                                       ├─► Anthropic  (Claude — chat responses)
+    │                                       ├─► OpenAI     (text-embedding-3-small)
+    │                                       └─► Celery + Redis
+    │                                              │
+    │                                              ├─ PDF / PPTX / DOCX parsing
+    │                                              ├─ YouTube transcripts
+    │                                              ├─ Google Drive ingestion
+    │                                              └─ Canvas LMS sync
+    │
+    ├── Chrome Extension ──────► FastAPI (same backend)
+    │    Intercepts clicks on Canvas file links (.pdf / .pptx / .docx),
+    │    maps LMS courses to ProfAI courses (one-time per course),
+    │    and ingests files in the background while the browser
+    │    downloads them normally.
+    │
+    └── MCP Server ────────────► FastAPI (per-user API key auth)
+         ├─ query_course        (query your knowledge base from any MCP client)
+         ├─ list_my_courses
+         ├─ ingest_google_drive
+         ├─ ingest_youtube
+         ├─ watch_folder        (auto-ingest from a local directory)
+         └─ get_ingestion_status
 ```
+
+## Chrome Extension setup
+
+1. Open `chrome://extensions` and enable **Developer mode**
+2. Click **Load unpacked** and select the `extension/` folder
+3. Click the ProfAI icon in the toolbar
+4. Enter your backend URL (`http://localhost:8000`) and your API key (from Settings → API Key in the web app)
+5. Navigate to any Canvas course page — clicking a PDF, PPTX, or DOCX link will automatically ingest it into the mapped ProfAI course
 
 ## MCP setup (Claude Desktop)
 
@@ -103,8 +106,6 @@ MCP Server ──► FastAPI (per-user API key auth)
 }
 ```
 
-You can then call `query_course`, `list_my_courses`, and ingestion tools directly from Claude.
-
 ## Verification path
 
 1. Register an account at http://localhost:3000/register
@@ -113,7 +114,8 @@ You can then call `query_course`, `list_my_courses`, and ingestion tools directl
 4. Open the chat — ask a question answerable from the PDF and verify:
    - Streaming response appears word-by-word
    - Source citations match the PDF
-5. Go to Settings → API Key, generate a key, and call `query_course` from an MCP client
+5. Install the Chrome extension, navigate to a Canvas course, click a file link — verify the ingestion toast appears and the file shows up in your course materials
+6. Go to Settings → API Key, generate a key, and call `query_course` from an MCP client
 
 ## Project structure
 
@@ -121,6 +123,6 @@ You can then call `query_course`, `list_my_courses`, and ingestion tools directl
 backend/        FastAPI + Celery + Alembic
 mcp_server/     FastMCP server (query + ingestion tools)
 frontend/       Vite + React + Tailwind
-docker-compose.yml
+extension/      Chrome MV3 browser extension
 projectPlan.md  Full architecture document
 ```
